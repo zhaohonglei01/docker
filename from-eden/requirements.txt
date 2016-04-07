@@ -1,0 +1,4 @@
+fabric
+ipython
+flake8
+fake-factory

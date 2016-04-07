@@ -1,0 +1,46 @@
+# version 1.0
+
+FROM ubuntu:14.04
+
+MAINTAINER zhujun@cienet.com.cn
+
+# Update system
+RUN apt-get -y update
+
+# Install needed software
+RUN apt-get -y install vim
+RUN apt-get -y install mysql-server-5.6
+COPY my.cnf /etc/mysql
+
+# Init tas db
+#RUN ["/etc/init.d/mysql", "start"]
+#RUN ["mysql", "-e", ""create database tctas;""]
+#RUN ["mysql", "-e", ""create user tasadm identified by 'tasadm';""]
+#RUN ["mysql", "-e", ""grant all on *.* to 'tasadm'@'%' identified by 'tasadm';""]
+#RUN ["mysql", "-e", ""grant all on *.* to 'tasadm'@'localhost' identified by 'tasadm';""]
+
+RUN /etc/init.d/mysql start &&\
+	mysql -e "create database tctas;"&&\
+	mysql -e "create user tasadm identified by 'tasadm';"&&\
+	mysql -e "grant all on *.* to 'tasadm'@'%' identified by 'tasadm';"&&\
+	mysql -e "grant all on *.* to 'tasadm'@'localhost' identified by 'tasadm';"
+EXPOSE 3306
+
+# Install tools
+COPY ./tctools /opt
+RUN cd /opt/tctools/ant;tar zxvf apache-ant-1.9.4-bin.tar.gz;rm apache-ant-1.9.4-bin.tar.gz
+RUN cd /opt/tctools/jboss;tar zxvf wildfly-8.2.1.Final.tar.gz;rm wildfly-8.2.1.Final.tar.gz
+RUN cd /opt/tctools/jdk;tar zxvf jdk-8u25-linux-x64.gz;rm jdk-8u25-linux-x64.gz
+
+# Install tas
+COPY ./tashome /home/root
+RUN cd /home/root/tashome;tar zxvf tasprod-TAS-OFF-R6V4-jboss-20150907-0945.tar.gz;rm tasprod-TAS-OFF-R6V4-jboss-20150907-0945.tar.gz
+RUN echo "source ~/tashome/tasrtenv.sh" >> /home/root/.bashrc
+RUN echo "sudo service mysqld start" >> /home/root/.bashrc
+RUN echo "tasstart.sh -ml" >> /home/root/.bashrc
+
+RUN source ~/tashome/tasrtenv.sh
+RUN taspatch.sh
+RUN tasdbinit.sh
+
+EXPOSE 6500

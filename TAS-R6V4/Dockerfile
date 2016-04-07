@@ -1,0 +1,47 @@
+# version 1.0
+
+FROM ubuntu:14.04
+
+MAINTAINER zhujun@cienet.com.cn
+
+# Update system
+RUN apt-get -y update
+
+# Install needed software
+#RUN apt-get -y install vim
+RUN apt-get -y install mysql-server-5.6
+COPY my.cnf /etc/mysql
+
+# Init tas db
+#RUN /etc/init.d/mysql start &&\
+#	mysql -e "create database tctas;"&&\
+#	mysql -e "create user tasadm identified by 'tasadm';"&&\
+#	mysql -e "grant all on *.* to 'tasadm'@'%' identified by 'tasadm';"&&\
+#	mysql -e "grant all on *.* to 'tasadm'@'localhost' identified by 'tasadm';"
+#EXPOSE 3306
+
+# Install tools
+COPY tctools/ /opt/tctools
+RUN cd /opt/tctools/ant;tar zxvf apache-ant-1.9.4-bin.tar.gz;rm apache-ant-1.9.4-bin.tar.gz
+RUN cd /opt/tctools/jboss;tar zxvf wildfly-8.2.1.Final.tar.gz;rm wildfly-8.2.1.Final.tar.gz
+RUN cd /opt/tctools/jdk;tar zxvf jdk-8u25-linux-x64.gz;rm jdk-8u25-linux-x64.gz
+
+# Install tas
+COPY tashome/ /root/tashome
+RUN cd ~/tashome;tar zxvf tasprod-TAS-OFF-R6V4-jboss-20150907-0945.tar.gz;rm tasprod-TAS-OFF-R6V4-jboss-20150907-0945.tar.gz
+RUN echo ". ~/tashome/tasrtenv.sh" >> ~/.bashrc
+RUN echo "service mysqld start" >> ~/.bashrc
+RUN echo "tasstart.sh -ml" >> ~/.bashrc
+
+ADD ./init.sh /opt/init.shd
+RUN echo "if [ -f /opt/init.sh ]; then . /opt/init.sh ; rm /opt/init.sh ;fi" >> /etc/bash.bashrc
+
+#RUN rm /bin/sh && ln -s /bin/bash /bin/sh
+#RUN . ~/init.sh
+#RUN /bin/bash -c "source ~/tashome/tasrtenv.sh"
+#RUN /bin/bash -c "cd ~/tashome/prod/unix/script;sh taspatch.sh"
+#RUN /bin/bash -c "./~/tashome/prod/unix/script/tasdbinit.sh"
+
+EXPOSE 3306
+EXPOSE 6500
+
